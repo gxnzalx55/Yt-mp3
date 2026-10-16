@@ -14,6 +14,8 @@
         <input type="text" name="url" placeholder="Introduce la URL de YouTube" required>
         <button type="submit">Descargar</button>
     </form>
+
+    {% if error %}<p class="error">{{ error }}</p>{% endif %}
 </div>
 
 </body>
