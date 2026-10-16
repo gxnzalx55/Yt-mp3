@@ -10,13 +10,55 @@
 <div class="container">
     <h1>Descargar MP3 de YouTube</h1>
 
-    <form method="POST">
+    <form method="POST" id="form">
         <input type="text" name="url" placeholder="Introduce la URL de YouTube" required>
-        <button type="submit">Descargar</button>
+        <button type="submit" id="btn">Descargar</button>
     </form>
 
-    {% if error %}<p class="error">{{ error }}</p>{% endif %}
+    <p class="error" id="error">{{ error or "" }}</p>
 </div>
 
+<script>
+const form = document.getElementById("form");
+const btn = document.getElementById("btn");
+const errorEl = document.getElementById("error");
+
+form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    errorEl.textContent = "";
+    btn.disabled = true;
+    const label = btn.textContent;
+    btn.textContent = "Descargando...";
+    try {
+        const res = await fetch("/", {
+            method: "POST",
+            headers: {"X-Requested-With": "fetch"},
+            body: new FormData(form),
+        });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            errorEl.textContent = data.error || "Ocurrió un error inesperado.";
+            return;
+        }
+        const disposition = res.headers.get("Content-Disposition") || "";
+        const star = /filename\*=UTF-8''([^;]+)/i.exec(disposition);
+        const plain = /filename="?([^";]+)"?/i.exec(disposition);
+        const filename = star ? decodeURIComponent(star[1]) : (plain ? plain[1] : "audio.mp3");
+        const url = URL.createObjectURL(await res.blob());
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+    } catch (err) {
+        errorEl.textContent = "No se pudo conectar con el servidor.";
+    } finally {
+        btn.disabled = false;
+        btn.textContent = label;
+    }
+});
+</script>
 </body>
 </html>

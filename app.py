@@ -25,6 +25,12 @@ def get_ffmpeg():
     return imageio_ffmpeg.get_ffmpeg_exe()
 
 
+def error_response(message, status):
+    if request.headers.get("X-Requested-With") == "fetch":
+        return {"error": message}, status
+    return render_template("index.html", error=message), status
+
+
 def is_youtube_url(url):
     try:
         parsed = urlparse(url)
@@ -39,7 +45,7 @@ def index():
         url = (request.form.get("url") or "").strip()
 
         if not is_youtube_url(url):
-            return render_template("index.html", error="Introduce una URL válida de YouTube."), 400
+            return error_response("Introduce una URL válida de YouTube.", 400)
 
         workdir = tempfile.mkdtemp(prefix="ytmp3_")
 
@@ -75,9 +81,7 @@ def index():
 
         except Exception:
             app.logger.exception("Error al descargar %s", url)
-            return render_template(
-                "index.html", error="No se pudo descargar el audio. Revisa la URL e inténtalo de nuevo."
-            ), 500
+            return error_response("No se pudo descargar el audio. Revisa la URL e inténtalo de nuevo.", 500)
 
     return render_template("index.html")
 
